@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SignSpeak AI - Conversation</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <!-- MediaPipe & Camera Utils -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.min.js"></script>
+</head>
+<body>
+  <div class="main-app">
+    <!-- Header / Navigation Bar -->
+    <header class="app-header">
+      <div class="header-content">
+        <a href="home.html" class="app-logo">SignSpeak AI</a>
+        <nav class="main-nav">
+          <a href="home.html" class="nav-link">Home</a>
+          <a href="about.html" class="nav-link">About Us</a>
+          <a href="conversation.html" class="nav-link active">Conversation</a>
+          <a href="awareness.html" class="nav-link">Awareness</a>
+        </nav>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <div class="conversation-layout">
+        <!-- Left Panel: Video & Audio Communication -->
+        <div class="communication-panel">
+          <h2 class="panel-title">Video & Audio Communication</h2>
+          
+          <!-- Video Input Section -->
+          <div class="video-input-section">
+            <div class="input-mode-selector">
+              <button id="live-camera-mode" class="mode-btn active">
+                <i class="fas fa-camera"></i> Live Camera
+              </button>
+              <button id="video-upload-mode" class="mode-btn">
+                <i class="fas fa-upload"></i> Upload Video
+              </button>
+            </div>
+            
+            <!-- Live Camera Section -->
+            <div id="live-camera-section" class="input-section active">
+              <div class="video-wrapper">
+                <video id="webcamFeed" autoplay muted playsinline width="640" height="480"></video>
+                <canvas id="landmarkCanvas" width="640" height="480"></canvas>
+                <div id="camera-placeholder" class="camera-placeholder">
+                  <i class="fas fa-video camera-icon"></i>
+                  <p>Camera feed will appear here</p>
+                </div>
+              </div>
+              <div class="camera-controls">
+                <button id="start-camera" class="btn btn-success">
+                  <i class="fas fa-camera"></i> START CAMERA
+                </button>
+                <button id="stop-camera" class="btn btn-danger" style="display: none;">
+                  <i class="fas fa-stop"></i> STOP CAMERA
+                </button>
+              </div>
+            </div>
+            
+            <!-- Video Upload Section -->
+            <div id="video-upload-section" class="input-section">
+              <div class="upload-area">
+                <input type="file" id="video-upload" accept="video/*" style="display: none;">
+                <div id="upload-dropzone" class="upload-dropzone">
+                  <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                  <p>Drop video file here or click to browse</p>
+                  <span class="upload-hint">Supports MP4, MOV, AVI formats</span>
+                </div>
+                <div id="uploaded-video-wrapper" class="video-wrapper" style="display: none;">
+                  <video id="uploadedVideo" controls width="640" height="480"></video>
+                  <canvas id="uploadLandmarkCanvas" width="640" height="480"></canvas>
+                </div>
+              </div>
+              <div class="upload-controls" style="display: none;">
+                <button id="process-video" class="btn btn-primary">
+                  <i class="fas fa-play"></i> Process Video
+                </button>
+                <button id="clear-video" class="btn btn-secondary">
+                  <i class="fas fa-times"></i> Clear Video
+                </button>
+              </div>
+              <div id="processing-status" class="processing-status" style="display: none;">
+                <div class="status-text">
+                  <i class="fas fa-spinner fa-spin"></i>
+                  <span id="status-message">Processing video...</span>
+                </div>
+                <div class="progress-bar">
+                  <div id="progress-fill" class="progress-fill"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Recognized Gesture Display -->
+          <div id="pendingGestureApproval" class="gesture-display">
+            <h3 class="gesture-title">Gesture Recognition</h3>
+            <p id="gestureStatus" class="gesture-text">Perform a gesture to start chatting...</p>
+            
+            <!-- Gesture Confidence Bar -->
+            <div class="confidence-container">
+              <div class="confidence-bar">
+                <div id="confidence-fill"></div>
+              </div>
+              <span id="confidence-text">0%</span>
+            </div>
+          </div>
+          
+          <!-- Action Buttons -->
+          <div class="action-buttons">
+            <button id="approve-gesture" class="btn btn-primary" disabled>
+              <i class="fas fa-check"></i> Approve & Send
+            </button>
+            <button id="redo-gesture" class="btn btn-secondary">
+              <i class="fas fa-redo"></i> Redo Gesture
+            </button>
+            <button id="test-gesture" class="btn btn-outline" style="margin-left: 10px;">
+              <i class="fas fa-bug"></i> Test Recognition
+            </button>
+          </div>
+
+          <!-- Smart Word Predictions -->
+          <div class="predictions-section">
+            <h3 class="predictions-title">Next Word Predictions:</h3>
+            <div id="predictionChips" class="prediction-chips">
+              <!-- Predictions will be populated dynamically -->
+            </div>
+          </div>
+          
+          <!-- Voice Communication Section -->
+          <div class="speech-input-section">
+            <h3 class="section-title">Voice Communication</h3>
+            <div id="transcribedSpeech" class="transcribed-text">Click "Start Listening" to begin...</div>
+            <div class="speech-action-buttons">
+              <button id="start-listening" class="btn btn-primary">
+                <i class="fas fa-microphone"></i> Start Listening
+              </button>
+              <button id="stop-listening" class="btn btn-danger" style="display: none;">
+                <i class="fas fa-stop"></i> Stop Listening
+              </button>
+              <button id="approve-speech" class="btn btn-primary" disabled>
+                <i class="fas fa-check"></i> Approve & Send
+              </button>
+              <button id="redo-speech" class="btn btn-secondary">
+                <i class="fas fa-redo"></i> Redo Speech
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Panel: Dialogues & Chat -->
+        <div class="chat-panel">
+          <div class="chat-header">
+            <h2 class="panel-title">Dialogues & Chat</h2>
+            <button id="clear-chat" class="btn btn-outline">
+              <i class="fas fa-trash"></i> Clear Chat
+            </button>
+          </div>
+          
+          <div id="chatLog" class="chat-log">
+            <div class="welcome-message">
+              <i class="fas fa-comments"></i>
+              <p>Start your conversation using gestures or speech!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Settings Panel -->
+    <div class="settings-panel">
+      <button id="settings-toggle" class="settings-toggle">
+        <i class="fas fa-cog"></i>
+      </button>
+      <div id="settings-content" class="settings-content" style="display: none;">
+        <h3>Audio Settings</h3>
+        <div class="audio-controls">
+          <label for="speech-rate">
+            <i class="fas fa-tachometer-alt"></i> Speech Rate:
+            <input type="range" id="speech-rate" min="0.5" max="2" step="0.1" value="1">
+            <span id="rate-value">1.0</span>
+          </label>
+          <label for="speech-volume">
+            <i class="fas fa-volume-up"></i> Volume:
+            <input type="range" id="speech-volume" min="0" max="1" step="0.1" value="1">
+            <span id="volume-value">1.0</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="conversation.js"></script>
+</body>
+</html> 
